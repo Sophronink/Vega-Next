@@ -43,7 +43,7 @@ android {
         abi {
             enable true
             reset()
-            include 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            include 'arm64-v8a'
             // ✅ CHANGED: Set to false so you don't generate massive APKs that bundle all architectures at once
             universalApk true 
         }
