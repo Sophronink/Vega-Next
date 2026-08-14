@@ -1,4 +1,4 @@
-name: Build Vega-Next APK
+name: Build Vega-Next Production APK
 
 on:
   workflow_dispatch:
@@ -91,14 +91,10 @@ jobs:
           echo "Setting Android compileSdk to 36"
           echo "================================"
 
-          # Make sure the file exists
           touch android/gradle.properties
 
-          # Remove an existing compileSdk override if present.
-          # Do not fail if there is nothing to remove.
           sed -i '/^[[:space:]]*android\.compileSdkVersion[[:space:]]*=/d' android/gradle.properties || true
 
-          # Add the required compileSdk override.
           printf '\nandroid.compileSdkVersion=36\n' >> android/gradle.properties
 
           echo "Android Gradle properties:"
@@ -119,15 +115,22 @@ jobs:
         run: |
           npx expo config --type public
 
-      - name: Build Debug APK
+      - name: Build Production ARM64 APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --no-daemon
+          ./gradlew :app:assembleRelease --no-daemon
 
-      - name: Upload APK
+      - name: List generated APK
+        run: |
+          echo "================================"
+          echo "Generated APK:"
+          echo "================================"
+          ls -lh android/app/build/outputs/apk/release/
+
+      - name: Upload Production APK
         uses: actions/upload-artifact@v4
         with:
-          name: Vega-Next-debug
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: Vega-Next-production-arm64
+          path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
