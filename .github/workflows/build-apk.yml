@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     env:
       NODE_ENV: development
@@ -17,8 +17,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '20'
           cache: npm
+
+      - name: Verify Node.js
+        run: |
+          node --version
+          npm --version
+          which node
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -27,14 +33,22 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: |
+          npm ci --ignore-scripts
 
       - name: Fix react-native-fs version
         run: |
+          rm -rf node_modules/@dr.pogodin/react-native-fs
+
           npm install @dr.pogodin/react-native-fs@2.34.0 \
+            --save-exact \
+            --force \
             --no-save \
             --package-lock=false \
             --ignore-scripts
+
+          echo "Installed react-native-fs version:"
+          node -p "require('./node_modules/@dr.pogodin/react-native-fs/package.json').version"
 
       - name: Completely reinstall Sharp
         run: |
@@ -42,14 +56,20 @@ jobs:
 
           npm install sharp@0.32.6 \
             --include=optional \
-            --os=linux \
-            --cpu=x64 \
+            --platform=linux \
+            --arch=x64 \
             --foreground-scripts \
             --no-save \
             --package-lock=false
 
           echo "Testing Sharp..."
           node -e "const sharp=require('sharp'); console.log('Sharp loaded:', sharp.versions.sharp)"
+
+      - name: Verify required versions
+        run: |
+          echo "Node: $(node --version)"
+          echo "react-native-fs: $(node -p "require('./node_modules/@dr.pogodin/react-native-fs/package.json').version")"
+          echo "Sharp: $(node -p "require('./node_modules/sharp/package.json').version")"
 
       - name: Apply Vega patches
         run: npx patch-package
