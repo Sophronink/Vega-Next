@@ -24,18 +24,39 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
-      - name: Build Release APK
+      - name: Apply Vega patches
+        run: |
+          npx patch-package expo-file-system react-native-video
+
+          python3 <<'PY'
+          from pathlib import Path
+
+          p = Path("node_modules/@dr.pogodin/react-native-fs/android/src/main/java/com/drpogodin/reactnativefs/ReactNativeFsPackage.kt")
+
+          text = p.read_text()
+
+          if "hasConstants = true" not in text:
+              old = "needsEagerInit = false,  // needsEagerInit"
+              new = old + "\n        hasConstants = true, // hasConstants"
+              
+              if old not in text:
+                  raise SystemExit("Could not find expected ReactNativeFsPackage.kt code")
+
+              p.write_text(text.replace(old, new, 1))
+
+          print("react-native-fs patch applied")
+
+          PY
+
+      - name: Build Debug APK
         working-directory: android
-        run: ./gradlew :app:assembleRelease
-
-      - name: Find APK
-        run: find android/app/build/outputs -type f -name "*.apk"
+        run: ./gradlew :app:assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Vega-Next-release
-          path: android/app/build/outputs/**/*.apk
+          name: Vega-Next-debug
+          path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
