@@ -91,14 +91,18 @@ jobs:
           echo "Setting Android compileSdk to 36"
           echo "================================"
 
-          # Remove any previous compileSdk override
-          sed -i '/^android\.compileSdkVersion=/d' android/gradle.properties
+          # Make sure the file exists
+          touch android/gradle.properties
 
-          # Explicitly override the value used by android/build.gradle
-          echo "android.compileSdkVersion=36" >> android/gradle.properties
+          # Remove an existing compileSdk override if present.
+          # Do not fail if there is nothing to remove.
+          sed -i '/^[[:space:]]*android\.compileSdkVersion[[:space:]]*=/d' android/gradle.properties || true
+
+          # Add the required compileSdk override.
+          printf '\nandroid.compileSdkVersion=36\n' >> android/gradle.properties
 
           echo "Android Gradle properties:"
-          grep -E "^android\.compileSdkVersion=" android/gradle.properties
+          cat android/gradle.properties
 
       - name: Verify Android SDK configuration
         working-directory: android
