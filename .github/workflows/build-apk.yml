@@ -14,7 +14,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: npm
 
       - name: Setup Java
@@ -30,9 +30,11 @@ jobs:
         run: |
           npm install @dr.pogodin/react-native-fs@2.34.0 --no-save --package-lock=false --ignore-scripts
 
-      - name: Install Sharp Linux binary
+      - name: Install Sharp
         run: |
-          npm install sharp --include=optional --platform=linux --arch=x64 --no-save --package-lock=false
+          npm install sharp@0.32.6 --no-save --package-lock=false
+          npm rebuild sharp
+          node -e "console.log('Sharp:', require('sharp').versions.sharp)"
           
       - name: Apply Vega patches
         run: npx patch-package
