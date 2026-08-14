@@ -26,27 +26,30 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Install Android SDK 36
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platforms;android-36"
+          sdkmanager "build-tools;36.0.0"
+
       - name: Install dependencies
         run: |
           npm ci --ignore-scripts
 
       - name: Force react-native-fs 2.34.0
         run: |
-          echo "Removing existing react-native-fs..."
           rm -rf node_modules/@dr.pogodin/react-native-fs
 
-          echo "Installing exact 2.34.0..."
           npm install @dr.pogodin/react-native-fs@2.34.0 \
             --save-exact \
             --force \
             --package-lock=false \
             --ignore-scripts=false
 
-          echo "Checking installed version..."
+          echo "Installed react-native-fs:"
           node -e "console.log(require('./node_modules/@dr.pogodin/react-native-fs/package.json').version)"
-
-          echo "Checking npm tree..."
-          npm ls @dr.pogodin/react-native-fs --depth=0 || true
 
       - name: Completely reinstall Sharp
         run: |
@@ -60,7 +63,7 @@ jobs:
             --no-save \
             --package-lock=false
 
-          echo "Testing Sharp..."
+          echo "Testing Sharp:"
           node -e "const sharp=require('sharp'); console.log('Sharp:', sharp.versions.sharp)"
 
       - name: Verify dependencies
@@ -77,13 +80,23 @@ jobs:
           echo "Sharp:"
           node -p "require('./node_modules/sharp/package.json').version"
 
-          echo "================================"
-          echo "Checking patch file:"
-          ls -la patches/
-
       - name: Apply Vega patches
         run: |
           npx patch-package
+
+      - name: Set compileSdk 36
+        run: |
+          echo "Changing Android compileSdk to 36..."
+
+          find android -type f \( -name "*.gradle" -o -name "*.gradle.kts" \) -print0 | while IFS= read -r -d '' file; do
+            sed -i \
+              -e 's/compileSdkVersion 35/compileSdkVersion 36/g' \
+              -e 's/compileSdk 35/compileSdk 36/g' \
+              "$file"
+          done
+
+          echo "Checking compileSdk references:"
+          grep -R "compileSdk" android --include="*.gradle" --include="*.gradle.kts" || true
 
       - name: Verify Expo config
         run: |
