@@ -26,10 +26,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android SDK 36
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK packages
+      - name: Install Android SDK 36
         run: |
           sdkmanager "platforms;android-36"
           sdkmanager "build-tools;36.0.0"
@@ -84,19 +84,56 @@ jobs:
         run: |
           npx patch-package
 
-      - name: Set compileSdk 36
+      - name: Force Android compileSdk 36
+        working-directory: android
         run: |
-          echo "Changing Android compileSdk to 36..."
+          echo "================================"
+          echo "ANDROID COMPILE SDK - BEFORE"
+          echo "================================"
 
-          find android -type f \( -name "*.gradle" -o -name "*.gradle.kts" \) -print0 | while IFS= read -r -d '' file; do
-            sed -i \
-              -e 's/compileSdkVersion 35/compileSdkVersion 36/g' \
-              -e 's/compileSdk 35/compileSdk 36/g' \
-              "$file"
-          done
+          grep -RniE \
+            "compileSdk|compileSdkVersion|COMPILE_SDK|compile.sdk" \
+            . \
+            --include="*.gradle" \
+            --include="*.gradle.kts" \
+            --include="*.properties" \
+            --exclude-dir=.gradle \
+            || true
 
-          echo "Checking compileSdk references:"
-          grep -R "compileSdk" android --include="*.gradle" --include="*.gradle.kts" || true
+          echo "================================"
+          echo "FORCING COMPILE SDK 36"
+          echo "================================"
+
+          find . -type f \
+            \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "*.properties" \) \
+            -not -path "./.gradle/*" \
+            -exec sed -i \
+              -e 's/compileSdkVersion[[:space:]]*[=:]*[[:space:]]*35/compileSdkVersion 36/g' \
+              -e 's/compileSdk[[:space:]]*[=:]*[[:space:]]*35/compileSdk = 36/g' \
+              -e 's/compileSdkVersion[[:space:]]*=[[:space:]]*35/compileSdkVersion = 36/g' \
+              -e 's/compileSdk[[:space:]]*=[[:space:]]*35/compileSdk = 36/g' \
+              {} +
+
+          echo "================================"
+          echo "ANDROID COMPILE SDK - AFTER"
+          echo "================================"
+
+          grep -RniE \
+            "compileSdk|compileSdkVersion|COMPILE_SDK|compile.sdk" \
+            . \
+            --include="*.gradle" \
+            --include="*.gradle.kts" \
+            --include="*.properties" \
+            --exclude-dir=.gradle \
+            || true
+
+          echo "================================"
+          echo "GRADLE SDK VALUES"
+          echo "================================"
+
+          ./gradlew :app:properties --no-daemon 2>/dev/null \
+            | grep -iE "compileSdk|targetSdk|minSdk" \
+            || true
 
       - name: Verify Expo config
         run: |
