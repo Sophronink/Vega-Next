@@ -30,12 +30,12 @@ jobs:
         run: |
           npm install @dr.pogodin/react-native-fs@2.34.0 --no-save --package-lock=false --ignore-scripts
 
-      - name: Install Sharp
+      - name: Install Sharp Linux binary
         run: |
-          npm install sharp@0.32.6 --no-save --package-lock=false
+          npm install sharp@0.32.6 --include=optional --os=linux --cpu=x64 --no-save --package-lock=false
           npm rebuild sharp
           node -e "console.log('Sharp:', require('sharp').versions.sharp)"
-          
+
       - name: Apply Vega patches
         run: npx patch-package
 
