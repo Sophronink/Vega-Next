@@ -5,7 +5,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+
+    env:
+      NODE_ENV: development
 
     steps:
       - name: Checkout
@@ -14,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Setup Java
@@ -28,16 +31,31 @@ jobs:
 
       - name: Fix react-native-fs version
         run: |
-          npm install @dr.pogodin/react-native-fs@2.34.0 --no-save --package-lock=false --ignore-scripts
+          npm install @dr.pogodin/react-native-fs@2.34.0 \
+            --no-save \
+            --package-lock=false \
+            --ignore-scripts
 
-      - name: Install Sharp Linux binary
+      - name: Install Sharp with native Linux binary
         run: |
-          npm install sharp@0.32.6 --include=optional --os=linux --cpu=x64 --no-save --package-lock=false
-          npm rebuild sharp
-          node -e "console.log('Sharp:', require('sharp').versions.sharp)"
+          npm install sharp@0.32.6 \
+            --platform=linux \
+            --arch=x64 \
+            --include=optional \
+            --ignore-scripts=false \
+            --no-save \
+            --package-lock=false
+
+          npm rebuild sharp --foreground-scripts
+
+          echo "Checking Sharp..."
+          node -e "console.log(require('sharp').versions)"
 
       - name: Apply Vega patches
         run: npx patch-package
+
+      - name: Verify Expo config
+        run: npx expo config --type public
 
       - name: Build Debug APK
         working-directory: android
