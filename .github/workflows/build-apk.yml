@@ -20,12 +20,6 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - name: Verify Node.js
-        run: |
-          node --version
-          npm --version
-          which node
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -36,19 +30,23 @@ jobs:
         run: |
           npm ci --ignore-scripts
 
-      - name: Fix react-native-fs version
+      - name: Force react-native-fs 2.34.0
         run: |
+          echo "Removing existing react-native-fs..."
           rm -rf node_modules/@dr.pogodin/react-native-fs
 
+          echo "Installing exact 2.34.0..."
           npm install @dr.pogodin/react-native-fs@2.34.0 \
             --save-exact \
             --force \
-            --no-save \
             --package-lock=false \
-            --ignore-scripts
+            --ignore-scripts=false
 
-          echo "Installed react-native-fs version:"
-          node -p "require('./node_modules/@dr.pogodin/react-native-fs/package.json').version"
+          echo "Checking installed version..."
+          node -e "console.log(require('./node_modules/@dr.pogodin/react-native-fs/package.json').version)"
+
+          echo "Checking npm tree..."
+          npm ls @dr.pogodin/react-native-fs --depth=0 || true
 
       - name: Completely reinstall Sharp
         run: |
@@ -63,19 +61,33 @@ jobs:
             --package-lock=false
 
           echo "Testing Sharp..."
-          node -e "const sharp=require('sharp'); console.log('Sharp loaded:', sharp.versions.sharp)"
+          node -e "const sharp=require('sharp'); console.log('Sharp:', sharp.versions.sharp)"
 
-      - name: Verify required versions
+      - name: Verify dependencies
         run: |
-          echo "Node: $(node --version)"
-          echo "react-native-fs: $(node -p "require('./node_modules/@dr.pogodin/react-native-fs/package.json').version")"
-          echo "Sharp: $(node -p "require('./node_modules/sharp/package.json').version")"
+          echo "================================"
+          echo "Node:"
+          node --version
+
+          echo "================================"
+          echo "react-native-fs:"
+          node -p "require('./node_modules/@dr.pogodin/react-native-fs/package.json').version"
+
+          echo "================================"
+          echo "Sharp:"
+          node -p "require('./node_modules/sharp/package.json').version"
+
+          echo "================================"
+          echo "Checking patch file:"
+          ls -la patches/
 
       - name: Apply Vega patches
-        run: npx patch-package
+        run: |
+          npx patch-package
 
       - name: Verify Expo config
-        run: npx expo config --type public
+        run: |
+          npx expo config --type public
 
       - name: Build Debug APK
         working-directory: android
