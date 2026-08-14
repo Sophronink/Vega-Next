@@ -36,20 +36,20 @@ jobs:
             --package-lock=false \
             --ignore-scripts
 
-      - name: Install Sharp with native Linux binary
+      - name: Completely reinstall Sharp
         run: |
+          rm -rf node_modules/sharp
+
           npm install sharp@0.32.6 \
-            --platform=linux \
-            --arch=x64 \
             --include=optional \
-            --ignore-scripts=false \
+            --os=linux \
+            --cpu=x64 \
+            --foreground-scripts \
             --no-save \
             --package-lock=false
 
-          npm rebuild sharp --foreground-scripts
-
-          echo "Checking Sharp..."
-          node -e "console.log(require('sharp').versions)"
+          echo "Testing Sharp..."
+          node -e "const sharp=require('sharp'); console.log('Sharp loaded:', sharp.versions.sharp)"
 
       - name: Apply Vega patches
         run: npx patch-package
