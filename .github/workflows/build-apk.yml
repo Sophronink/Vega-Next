@@ -30,6 +30,10 @@ jobs:
         run: |
           npm install @dr.pogodin/react-native-fs@2.34.0 --no-save --package-lock=false --ignore-scripts
 
+      - name: Install Sharp Linux binary
+        run: |
+          npm install sharp --include=optional --platform=linux --arch=x64 --no-save --package-lock=false
+          
       - name: Apply Vega patches
         run: npx patch-package
 
